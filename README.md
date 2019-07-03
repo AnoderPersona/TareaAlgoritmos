@@ -1,2 +1,2 @@
 # TareaAlgoritmos
-Suffix Tree in cpp
+Pattern Matching cpp
