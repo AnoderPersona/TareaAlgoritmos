@@ -13,6 +13,7 @@
 
 /*
  * Tachar el patron una vez ya visto
+ * Hacer un vector en vez de un int en el costo de los nodos
  */
 
 using namespace std;
@@ -29,7 +30,8 @@ struct Suffix{
 struct nodo{
     
     //Informacion del nodo
-    int costo;
+//     int costo;
+    vector<int> costo;
 
     //vector con todas las relaciones del elemento
     map<char,nodo*> relaciones;
@@ -42,13 +44,13 @@ nodo* ST(string texto, vector <Suffix> data, int N){
     nodo *raiz = new nodo;
     nodo *nodoActual;
     nodo *nodoAux;
+    map<char, nodo*>::iterator relacionActual ;
+
     
     for (int palabra = 0; palabra < N; palabra++){
 
         nodoActual = raiz;
-        
-        map<char, nodo*>::iterator relacionActual ;
-        
+                
         for (int letra = 0; letra < (data[palabra].suff).length(); letra++){
             
             if (data[palabra].suff[letra] == '\n'){
@@ -57,7 +59,12 @@ nodo* ST(string texto, vector <Suffix> data, int N){
             else if ( nodoActual -> relaciones.find(data[palabra].suff[letra]) == nodoActual -> relaciones.end()){
 
                 nodoAux = new nodo;
-                nodoAux -> costo = data[palabra].index;
+
+                
+//                 nodoAux -> costo = data[palabra].index;
+                nodoAux -> costo.push_back(data[palabra].index);
+                
+                
                 nodoActual -> relaciones.insert({(data[palabra].suff[letra]),nodoAux});
                 nodoActual = nodoAux;
                 
@@ -66,7 +73,10 @@ nodo* ST(string texto, vector <Suffix> data, int N){
                 
                 relacionActual = nodoActual -> relaciones.find(data[palabra].suff[letra]);
 
+                nodoActual -> costo.push_back(data[palabra].index);
+                
                 nodoActual = relacionActual->second;
+
                 
             }
         }   
@@ -76,7 +86,7 @@ nodo* ST(string texto, vector <Suffix> data, int N){
 }
 
 //Busca dentro del Suffix Trie
-int findWord(string patron, nodo *raiz){
+vector<int> findWord(string patron, nodo *raiz){
     
     nodo *nodoActual;
     nodoActual = raiz;
@@ -183,7 +193,7 @@ void SABinaryArray(string patron, string texto, int arr[], int (&res)[2],int n){
 }
 
 //Encuentra el patron por fuerza bruta
-int cutOutText(string patron, string texto){
+void cutOutText(string patron, string texto, vector<int> &indexPatron){
     
     int lon;
     int numPatron;
@@ -193,24 +203,24 @@ int cutOutText(string patron, string texto){
     numPatron = 0;
     
     for (int start = 0; start < texto.size()-lon; start++){
-        
-        posPatron = texto.substr(start,lon);
-        
-        if (posPatron == patron){
+        if (texto[start] == patron[0] && texto.substr(start,lon) == patron){
+//         posPatron = texto.substr(start,lon);
+//         
+//         if (posPatron == patron){
             
-            return numPatron;
+            indexPatron.push_back(start);
+//             return numPatron;
         }
-        
-        numPatron += 1;
     }
     
-    return -1;
 }
 
 void locate(string T, int N, string P,int m[], vector<Suffix> suffixes, int (&times)[3], nodo *tope){
     
-    int placeCutOut, places[2], trieIndex, randomB, randomE;
+    int placeCutOut, places[2], randomB, randomE;
     long cOTTime, SABATime, STTime = 0;
+    
+    vector<int> indexPatron, trieIndex;
         
     
     /*--------- Resultados por cutOutText -------------------*/
@@ -220,15 +230,14 @@ void locate(string T, int N, string P,int m[], vector<Suffix> suffixes, int (&ti
     cout << "|----------------------------------------|" << endl;
     
     cout << "   Por fuerza bruta: " << endl << "   ";
-    placeCutOut = cutOutText(P, T);
+    cutOutText(P, T, indexPatron);
     
-    if (placeCutOut != -1)
-        
-        cout << placeCutOut << " " << placeCutOut + P.size()<< endl;
-    
-    else
-        
-        cout << -1 << endl;
+    for(int i = 0; i < indexPatron.size(); i++){
+            
+        cout << indexPatron[i] - P.size() << " " ;
+    }
+
+    cout << endl;
     
     auto stop = chrono::high_resolution_clock::now();
     
@@ -267,20 +276,27 @@ void locate(string T, int N, string P,int m[], vector<Suffix> suffixes, int (&ti
 
     cout << "|----------------------------------------|" << endl;
     
-    cout << "   Por suffix trie: " << endl ;
+    cout << "   Por suffix trie: " << endl << "   ";
     
     start = chrono::high_resolution_clock::now();
 
     trieIndex = findWord(P, tope);
     
-    if(trieIndex != -1)
-        
-        cout << "   "<< trieIndex << " " << trieIndex + P.size() << endl;
-    else
-        
-        cout << trieIndex << endl;
     
-        stop = chrono::high_resolution_clock::now();
+    for (int i = 0;i < trieIndex.size(); i++){
+     
+        cout << trieIndex[i] - P.size() << " ";
+    }
+    cout << endl;
+    
+//     if(trieIndex != -1)
+//         
+//         cout << "   "<< trieIndex << " " << trieIndex + P.size() << endl;
+//     else
+//         
+//         cout << trieIndex << endl;
+    
+    stop = chrono::high_resolution_clock::now();
     
     duration = chrono::duration_cast<chrono::microseconds>(stop-start);
     
@@ -340,7 +356,7 @@ int main(){
     int times[3] = {0,0,0};
     
     ifstream txt;
-    txt.open ("test.txt");
+    txt.open ("test2.txt");
 
     //guardar texto en una variable
     textstream << txt.rdbuf();
@@ -405,25 +421,6 @@ int main(){
         }
     
     }while (option != 'a' and option != 'b');
-/*    
-    cout << " Ingrese patron a buscar: " << endl << "  ";
-    
-    cin >> patron;
-    
-    cout << " ----------------------------------------" << endl;
-    
-    cout << "   Su patron se encuentra en: " << endl;*/
-    
-//     auto start = chrono::high_resolution_clock::now();
-// 
-//     experiment(text,N,patron,arr, suffixes);
-//     //locate(text, N,patron,arr, suffixes);
-//     
-//     auto stop = chrono::high_resolution_clock::now();
-//     
-//     auto duration = chrono::duration_cast<chrono::microseconds>(stop-start);
-//     
-//     cout << "En total demoró " << duration.count() << " microsegundos" <<endl;
-    
+
     return 0;
 }
