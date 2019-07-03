@@ -10,6 +10,11 @@
 #include <chrono>
 #include <time.h>
 
+
+/*
+ * Tachar el patron una vez ya visto
+ */
+
 using namespace std;
 
 //Estructura que contiene el indice de un sufijo y el sufijo en sí
@@ -35,31 +40,33 @@ struct nodo{
 nodo* ST(string texto, vector <Suffix> data, int N){
     
     nodo *raiz = new nodo;
-    nodo *p;
-    nodo *q;
+    nodo *nodoActual;
+    nodo *nodoAux;
     
     for (int palabra = 0; palabra < N; palabra++){
 
-        p = raiz;
+        nodoActual = raiz;
         
-        map<char, nodo*>::iterator it ;
+        map<char, nodo*>::iterator relacionActual ;
         
         for (int letra = 0; letra < (data[palabra].suff).length(); letra++){
-
-            if (data[palabra].suff[letra] == '\n'){}
             
-            else if ( p -> relaciones.find(data[palabra].suff[letra]) == p -> relaciones.end()){
+            if (data[palabra].suff[letra] == '\n'){
+            }
+            
+            else if ( nodoActual -> relaciones.find(data[palabra].suff[letra]) == nodoActual -> relaciones.end()){
 
-                q = new nodo;
-                q -> costo = data[palabra].index;
-                p -> relaciones.insert({(data[palabra].suff[letra]),q});
-                p = q;
+                nodoAux = new nodo;
+                nodoAux -> costo = data[palabra].index;
+                nodoActual -> relaciones.insert({(data[palabra].suff[letra]),nodoAux});
+                nodoActual = nodoAux;
+                
                 
             }else{
+                
+                relacionActual = nodoActual -> relaciones.find(data[palabra].suff[letra]);
 
-                it = p -> relaciones.find(data[palabra].suff[letra]);
-
-                p = it->second;
+                nodoActual = relacionActual->second;
                 
             }
         }   
@@ -71,30 +78,27 @@ nodo* ST(string texto, vector <Suffix> data, int N){
 //Busca dentro del Suffix Trie
 int findWord(string patron, nodo *raiz){
     
-//     map<char, nodo*>::iterator it ;
-    
-    nodo *p;
-    p = raiz;
+    nodo *nodoActual;
+    nodoActual = raiz;
 
-    for (int i = 0; i < patron.size(); i++){
 
-        map<char, nodo*>::iterator it ;
+    for (int index = 0; index < patron.size(); index++){
 
-        //Busca en el map<char, *nodo> relaciones el char actual del patrón, y una vez que lo encuentra, el puntero apunta a su hijo
-        
-        it = p -> relaciones.find(patron[i]);
-        
-        p = it->second;
+        map<char, nodo*>::iterator relacionActual ;
 
-        if(it != p->relaciones.end()){
-            
-            cout << "Borró el iterador" << endl;
-            
-            p->relaciones.erase (it);
+        if (patron[index] == '\n'){
         }
+        
+        else{
+         //Busca en el map<char, *nodo> relaciones el char actual del patrón, y una vez que lo encuentra, el puntero apunta a su hijo
+         
+            relacionActual = nodoActual -> relaciones.find(patron[index]);
             
+            nodoActual = relacionActual->second;
+
+        }
     }
-    return p->costo;
+    return nodoActual->costo;
 }
 
 //Permite ordenar el vector alfabeticamente por su sufijo
@@ -115,13 +119,13 @@ bool compare(const Suffix &a, const Suffix &b){
 //Crea vector de sufijos para luego pasar a un arreglo
 int createVector(string text,vector<Suffix> &suffixes){
     
-    Suffix s;
+    Suffix sufijoActual;
     
-    for (int i = 0; i < text.size(); i++){
+    for (int start = 0; start < text.size(); start++){
         
-        s.suff = text.substr(i,text.size() - 1);
-        s.index = i;
-        suffixes.push_back(s);
+        sufijoActual.suff = text.substr(start,text.size() - 1);
+        sufijoActual.index = start;
+        suffixes.push_back(sufijoActual);
     
     }
         
@@ -188,9 +192,9 @@ int cutOutText(string patron, string texto){
     lon = patron.size();
     numPatron = 0;
     
-    for (int i = 0; i < texto.size()-lon; i++){
+    for (int start = 0; start < texto.size()-lon; start++){
         
-        posPatron = texto.substr(i,lon);
+        posPatron = texto.substr(start,lon);
         
         if (posPatron == patron){
             
@@ -203,101 +207,88 @@ int cutOutText(string patron, string texto){
     return -1;
 }
 
-void locate(string T, int N, string P,int m[], vector<Suffix> suffixes, int (&times)[3], nodo *arbol){
+void locate(string T, int N, string P,int m[], vector<Suffix> suffixes, int (&times)[3], nodo *tope){
     
     int placeCutOut, places[2], trieIndex, randomB, randomE;
     long cOTTime, SABATime, STTime = 0;
-
+        
     
-//     nodo *arbol;
-//     
-//     arbol = ST(T, suffixes, N);
-    /* 
-    for (int i = 0; i < 1500; i++){
+    /*--------- Resultados por cutOutText -------------------*/
+    
+    auto start = chrono::high_resolution_clock::now();
+    
+    cout << "|----------------------------------------|" << endl;
+    
+    cout << "   Por fuerza bruta: " << endl << "   ";
+    placeCutOut = cutOutText(P, T);
+    
+    if (placeCutOut != -1)
         
-        srand(time(NULL));
+        cout << placeCutOut << " " << placeCutOut + P.size()<< endl;
+    
+    else
         
-        randomB = rand() % (T.size()-10);
-        randomE = randomB + (rand() % 10) +1;
-        
-        P = T.substr(randomB,randomE);
-        
-        cout << "Iteracion " << i << endl << "patron: "<< P << endl; 
-        
-        /*--------- Resultados por cutOutText -------------------*/
-        auto start = chrono::high_resolution_clock::now();
-        
-        cout << "|----------------------------------------|" << endl;
-        
-        cout << "   Por fuerza bruta: " << endl << "   ";
-        placeCutOut = cutOutText(P, T);
-        
-        if (placeCutOut != -1)
-            cout << placeCutOut << " " << placeCutOut + P.size()<< endl;
-        else
-            cout << -1 << endl;
-        
-        auto stop = chrono::high_resolution_clock::now();
-        
-        auto duration = chrono::duration_cast<chrono::microseconds>(stop-start);
-        
-        times[0] += duration.count();
-        
-        cout << "Demoró " << duration.count() << " microsegundos" <<endl;
-        
-        /*--------- Resultados por suffixArray ------------------*/
-        start = chrono::high_resolution_clock::now();
+        cout << -1 << endl;
+    
+    auto stop = chrono::high_resolution_clock::now();
+    
+    auto duration = chrono::duration_cast<chrono::microseconds>(stop-start);
+    
+    times[0] += duration.count();
+    
+    cout << "Demoró " << duration.count() << " microsegundos" <<endl;
+    
+    
+    
+    /*--------- Resultados por suffixArray ------------------*/
+    
+    start = chrono::high_resolution_clock::now();
 
-        SABinaryArray(P, T, m, places, N);
-        
-        cout << "|----------------------------------------|" << endl;
-        
-        cout << "   Por suffix array: " << endl  << "   ";
-        
-        cout << m[places[0]] << " " <<m[places[0]] + P.size() << endl;
+    SABinaryArray(P, T, m, places, N);
+    
+    cout << "|----------------------------------------|" << endl;
+    
+    cout << "   Por suffix array: " << endl  << "   ";
+    
+    cout << m[places[0]] << " " <<m[places[0]] + P.size() << endl;
 
+    stop = chrono::high_resolution_clock::now();
+    
+    duration = chrono::duration_cast<chrono::microseconds>(stop-start);
+    
+    cout << "Demoró " << duration.count() << " microsegundos" <<endl;
+    
+    times[1] += duration.count();
+    
+    
+    
+    /*--------- Resultados por suffixTrie -------------------*/
+    
+
+    cout << "|----------------------------------------|" << endl;
+    
+    cout << "   Por suffix trie: " << endl ;
+    
+    start = chrono::high_resolution_clock::now();
+
+    trieIndex = findWord(P, tope);
+    
+    if(trieIndex != -1)
+        
+        cout << "   "<< trieIndex << " " << trieIndex + P.size() << endl;
+    else
+        
+        cout << trieIndex << endl;
+    
         stop = chrono::high_resolution_clock::now();
-        
-        duration = chrono::duration_cast<chrono::microseconds>(stop-start);
-        
-        cout << "Demoró " << duration.count() << " microsegundos" <<endl;
-        
-        times[1] += duration.count();
-        
-        /*--------- Resultados por suffixTrie -------------------*/
-        
-        //start = chrono::high_resolution_clock::now();
-
-        cout << "|----------------------------------------|" << endl;
-        
-        cout << "   Por suffix trie: " << endl ;
-
-        //arbol = ST(T, suffixes, N);
-        
-        //stop = chrono::high_resolution_clock::now();
-        
-        //duration = chrono::duration_cast<chrono::microseconds>(stop-start);
-        
-        //cout << "Demoró " << duration.count() << " microsegundos en crear el arbol" <<endl;
-        
-        start = chrono::high_resolution_clock::now();
-
-        trieIndex = findWord(P, arbol);
-        if(trieIndex != -1)
-            cout << "   "<< trieIndex << " " << trieIndex + P.size() << endl;
-        else
-            cout << trieIndex << endl;
-        
-            stop = chrono::high_resolution_clock::now();
-        
-        duration = chrono::duration_cast<chrono::microseconds>(stop-start);
-        
-        cout << "Demoró " << duration.count() << " microsegundos en encontrar e imprimir el indice" <<endl;
-        
-        times[2] += duration.count();
-        
-        cout << "|----------------------------------------|" << endl;
-    //}
+    
+    duration = chrono::duration_cast<chrono::microseconds>(stop-start);
+    
+    cout << "Demoró " << duration.count() << " microsegundos en encontrar e imprimir el indice" <<endl;
+    
+    times[2] += duration.count();
+    
+    cout << "|----------------------------------------|" << endl;
     
 }
 
@@ -305,7 +296,7 @@ void experiment(string text,int N,string patron,int arr[], vector<Suffix> suffix
     
     int randomB,randomE, nIter;
     int times[3] = {0,0,0};
-    nodo *arbol;
+    nodo *arbol, *tope;
     
     nIter = 3000;
 
@@ -319,6 +310,8 @@ void experiment(string text,int N,string patron,int arr[], vector<Suffix> suffix
     
     for (int i = 0; i < nIter; i++){
                 
+        tope = arbol;
+        
         randomB = rand() % (text.size()-10);
         randomE = (rand() % 30) +1;
         
@@ -328,26 +321,27 @@ void experiment(string text,int N,string patron,int arr[], vector<Suffix> suffix
         
         cout << "Iteracion " << i << endl << "patron: "<< patron << endl; 
         
-        locate(text, N, patron, arr, suffixes,times, arbol);
+        locate(text, N, patron, arr, suffixes,times, tope);
     
     }
     
-    cout << "Tiempo promedio en " << nIter << " búsquedas:" << endl << "cutOutText = " << times[0]/1500 << endl << "SA = " << times[1]/1500 << endl << "ST = " << times[2]/1500<< endl;
+    cout << "Tiempo promedio en " << nIter << " búsquedas:" << endl << "cutOutText = " << times[0]/1500 << endl << "SA = " << times[1]/1500 << endl << "ST = " << times[2]/1500<< endl << "microsegundos" << endl;
 }
 
 int main(){
 
     string text, patron;
+    char option;
     stringstream textstream;
     vector<Suffix> suffixes;
     int sizeSuff, placeCutOut, places[2], trieIndex, m;
 
     nodo *arbol;
+    int times[3] = {0,0,0};
     
     ifstream txt;
     txt.open ("test.txt");
 
-    
     //guardar texto en una variable
     textstream << txt.rdbuf();
     text = textstream.str();
@@ -365,35 +359,71 @@ int main(){
     const int N = sizeSuff;
     
     int arr[N];
-
     
     //arreglo con los sufijos ordenados
     for (int i = 0; i < N; i++){
         
         arr[i] = suffixes[i].index;
     }
+    do{
+        
+        cout << endl << "Desea [a] experimentar con 3000 iteraciones, o desea [b] ingresar su patron? [a/b]: ";
+        
+        cin >> option;
+        
+        cout << " ________________________________________" << endl;
+        
+        if (option == 'b'){
+                
+            cout << " Ingrese patron a buscar: " << endl << "  ";
+            
+            cin >> patron;
+            
+            cout << " ----------------------------------------" << endl;
+            
+            cout << "   Su patron se encuentra en: " << endl;
+            
+            
+            cout << "Creando árbol... " << endl;
+            arbol = ST(text, suffixes, N);
+            cout << "árbol creado" << endl;
+            
+            locate(text, N,patron,arr, suffixes, times, arbol);
+        }
+        
+        else if(option == 'a'){
+            
+            auto start = chrono::high_resolution_clock::now();
+
+            experiment(text,N,patron,arr, suffixes);
+            
+            auto stop = chrono::high_resolution_clock::now();
+            
+            auto duration = chrono::duration_cast<chrono::microseconds>(stop-start);
+            
+            cout << "En total demoró " << duration.count() << " microsegundos" <<endl;
+        }
     
-    
-    cout << " ________________________________________" << endl;
-    
+    }while (option != 'a' and option != 'b');
+/*    
     cout << " Ingrese patron a buscar: " << endl << "  ";
     
     cin >> patron;
     
     cout << " ----------------------------------------" << endl;
     
-    cout << "   Su patron se encuentra en: " << endl;
+    cout << "   Su patron se encuentra en: " << endl;*/
     
-    auto start = chrono::high_resolution_clock::now();
-
-    experiment(text,N,patron,arr, suffixes);
-    //locate(text, N,patron,arr, suffixes);
-    
-    auto stop = chrono::high_resolution_clock::now();
-    
-    auto duration = chrono::duration_cast<chrono::microseconds>(stop-start);
-    
-    cout << "En total demoró " << duration.count() << " microsegundos" <<endl;
+//     auto start = chrono::high_resolution_clock::now();
+// 
+//     experiment(text,N,patron,arr, suffixes);
+//     //locate(text, N,patron,arr, suffixes);
+//     
+//     auto stop = chrono::high_resolution_clock::now();
+//     
+//     auto duration = chrono::duration_cast<chrono::microseconds>(stop-start);
+//     
+//     cout << "En total demoró " << duration.count() << " microsegundos" <<endl;
     
     return 0;
 }
